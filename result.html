@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Extracted Text</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f0f0; }
+        .container { max-width: 800px; margin: 50px auto; padding: 30px; background-color: #fff; border-radius: 8px; }
+        button { padding: 10px 20px; margin-bottom: 20px; }
+        #text-content { white-space: pre-wrap; text-align: left; }
+        #status { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Extracted Text</h1>
+        <label for="voiceSelect">Choose Voice:</label>
+        <select id="voiceSelect"></select>
+        <label for="rateSelect">Speech Rate:</label>
+        <input type="range" id="rateSelect" min="0.5" max="2" value="1" step="0.1">
+        <span id="rateValue">1</span>
+        <br><br>
+        <button onclick="readText()">Read Aloud</button>
+        <button onclick="stopReading()">Stop</button>
+        <p id="status"></p>
+        <div id="text-content">{{ extracted_text }}</div>
+    </div>
+
+    <script>
+        let synth = window.speechSynthesis;
+        let utterance;
+        let voices = [];
+        const voiceSelect = document.getElementById('voiceSelect');
+        const rateSelect = document.getElementById('rateSelect');
+        const rateValue = document.getElementById('rateValue');
+
+        function populateVoiceList() {
+            voices = synth.getVoices();
+            voiceSelect.innerHTML = '';
+
+            voices.forEach((voice, i) => {
+                let option = document.createElement('option');
+                option.textContent = `${voice.name} (${voice.lang})`;
+                option.value = i;
+
+                if (voice.name.includes('Female')) {
+                    option.selected = true; // Auto-select a female voice if found
+                }
+
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        // Populate voices when they become available
+        populateVoiceList();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = populateVoiceList;
+        }
+
+        // Update the rate value label
+        rateSelect.addEventListener('input', function() {
+            rateValue.textContent = rateSelect.value;
+        });
+
+        function readText() {
+            let text = document.getElementById('text-content').innerText;
+            if (synth.speaking) {
+                synth.cancel();
+            }
+
+            utterance = new SpeechSynthesisUtterance(text);
+            utterance.voice = voices[voiceSelect.value];
+            utterance.rate = rateSelect.value; // Set the speech rate based on user selection
+
+            utterance.onstart = function() {
+                document.getElementById('status').innerText = 'Reading...';
+            };
+            utterance.onend = function() {
+                document.getElementById('status').innerText = 'Finished reading.';
+            };
+
+            synth.speak(utterance);
+        }
+
+        function stopReading() {
+            if (synth.speaking) {
+                synth.cancel();
+                document.getElementById('status').innerText = 'Reading stopped.';
+            }
+        }
+    </script>
+</body>
+</html>
